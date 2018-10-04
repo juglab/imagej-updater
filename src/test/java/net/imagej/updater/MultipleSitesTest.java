@@ -30,16 +30,7 @@
  */
 package net.imagej.updater;
 
-import static net.imagej.updater.UpdaterTestUtils.addUpdateSite;
-import static net.imagej.updater.UpdaterTestUtils.assertAction;
-import static net.imagej.updater.UpdaterTestUtils.assertCount;
-import static net.imagej.updater.UpdaterTestUtils.assertStatus;
-import static net.imagej.updater.UpdaterTestUtils.cleanup;
-import static net.imagej.updater.UpdaterTestUtils.initialize;
-import static net.imagej.updater.UpdaterTestUtils.readFile;
-import static net.imagej.updater.UpdaterTestUtils.main;
-import static net.imagej.updater.UpdaterTestUtils.update;
-import static net.imagej.updater.UpdaterTestUtils.writeFile;
+import static net.imagej.updater.UpdaterTestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -82,18 +73,30 @@ public class MultipleSitesTest {
 		files = main(files, "upload", "--force-shadow", "--update-site", "second", macro);
 		final String check2 = files.get(macro).getChecksum();
 
-		writeFile(new File(ijRoot, macro), "Narf!");
+		writeFile(new File(ijRoot, macro), "Egads!");
 		addUpdateSite(files, "third");
 		files = main(files, "upload", "--force-shadow", "--update-site", "third", macro);
 		final String check3 = files.get(macro).getChecksum();
 
 		assertCount(1, files);
 		assertEquals(check3, files.get(macro).getChecksum());
+		assertCount(2, files.get(macro).previous);
+		Iterator<Version> iterator = files.get(macro).previous.iterator();
+		Version v1 = iterator.next();
+		Version v2 = iterator.next();
+		assertFalse(iterator.hasNext());
+		assertNotEqual(check1, check2);
+		assertNotEqual(v2, v1);
+		assertEquals(check1, v1.checksum);
+		assertEquals(check2, v2.checksum);
+		assertEquals("ImageJ", v1.updateSite);
+		assertEquals("second", v2.updateSite);
 
 		files.removeUpdateSite("third");
 		assertCount(1, files);
+		assertCount(1, files.get(macro).previous);
 		assertEquals(check2, files.get(macro).getChecksum());
-		final Iterator<Version> iterator = files.get(macro).previous.iterator();
+		iterator = files.get(macro).previous.iterator();
 		assertEquals(check1, iterator.next().checksum);
 		assertFalse(iterator.hasNext());
 		assertEquals(Action.UPDATE, files.get(macro).getAction());
@@ -101,7 +104,7 @@ public class MultipleSitesTest {
 		files.removeUpdateSite("second");
 		assertCount(1, files);
 		assertEquals(check1, files.get(macro).getChecksum());
-		assertFalse(files.get(macro).previous.iterator().hasNext());
+		assertCount(0, files.get(macro).previous);
 		assertEquals(Action.UPDATE, files.get(macro).getAction());
 
 		files.removeUpdateSite(FilesCollection.DEFAULT_UPDATE_SITE);

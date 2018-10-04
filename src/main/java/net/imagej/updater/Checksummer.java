@@ -152,7 +152,7 @@ public class Checksummer extends AbstractProgressable {
 	protected void queue(final String path, final File file) {
 		String unversioned = FileObject.getFilename(path, true);
 		if (!queue.containsKey(unversioned))
-			queue.put(unversioned, new ArrayList<StringAndFile>());
+			queue.put(unversioned, new ArrayList<>());
 		queue.get(unversioned).add(new StringAndFile(path, file));
 	}
 
@@ -216,13 +216,10 @@ public class Checksummer extends AbstractProgressable {
 				else
 					locallyModifieds.add(p);
 			}
-			Comparator<StringAndFile> comparator = new Comparator<StringAndFile>() {
-				@Override
-				public int compare(StringAndFile a, StringAndFile b) {
-					long diff = a.file.lastModified() - b.file.lastModified();
-					return diff < 0 ? +1 : diff > 0 ? -1 : 0;
-				}
-			};
+			Comparator<StringAndFile> comparator = (a, b) -> {
+                long diff = a.file.lastModified() - b.file.lastModified();
+                return diff < 0 ? +1 : diff > 0 ? -1 : 0;
+            };
 			Collections.sort(upToDates, comparator);
 			Collections.sort(obsoletes, comparator);
 			Collections.sort(locallyModifieds, comparator);
@@ -503,16 +500,24 @@ public class Checksummer extends AbstractProgressable {
 			String line;
 			while ((line = reader.readLine()) != null)
 				try {
-					final int space = line.indexOf(' ');
-					if (space < 0) continue;
-					final String checksum = line.substring(0, space);
-					final int space2 = line.indexOf(' ', space + 1);
-					if (space2 < 0) continue;
-					final long timestamp =
-						Long.parseLong(line.substring(space + 1, space2));
-					final String filename = line.substring(space2 + 1);
-					cachedChecksums.put(filename, new FileObject.Version(checksum,
-						timestamp));
+					String[] parts = line.split(" ");
+					if(parts.length == 3) {
+						final String checksum = parts[0];
+						final long timestamp =
+								Long.parseLong(parts[1]);
+						final String filename = parts[2];
+						cachedChecksums.put(filename, new FileObject.Version(checksum,
+								timestamp, null));
+					}
+					if(parts.length == 4) {
+						final String checksum = parts[0];
+						final long timestamp =
+								Long.parseLong(parts[1]);
+						final String filename = parts[2];
+						final String updateSite = parts[3];
+						cachedChecksums.put(filename, new FileObject.Version(checksum,
+								timestamp, updateSite));
+					}
 				}
 				catch (final NumberFormatException e) {
 					/* ignore line */
@@ -534,7 +539,7 @@ public class Checksummer extends AbstractProgressable {
 				if (filename.startsWith(":") || files.prefix(filename).exists()) {
 					final FileObject.Version version = cachedChecksums.get(filename);
 					writer.write(version.checksum + " " + version.timestamp + " " +
-						filename + "\n");
+						filename + " " + version.updateSite + "\n");
 				}
 			writer.close();
 		}

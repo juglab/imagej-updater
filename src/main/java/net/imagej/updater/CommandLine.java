@@ -712,6 +712,7 @@ public class CommandLine {
 			}
 
 			String result = null;
+			String updateSite = null;
 			String checksum = null;
 			long matchedTimestamp = 0;
 			for (final Version version : file.previous) {
@@ -719,6 +720,7 @@ public class CommandLine {
 					result = version.filename;
 					checksum = version.checksum;
 					matchedTimestamp = version.timestamp;
+					updateSite = version.updateSite;
 				}
 			}
 
@@ -739,7 +741,7 @@ public class CommandLine {
 				}
 				else {
 					if (file.current == null) {
-						file.current = new Version(checksum, matchedTimestamp);
+						file.current = new Version(checksum, matchedTimestamp, updateSite);
 					}
 					else {
 						file.current.checksum = checksum;
@@ -857,7 +859,7 @@ public class CommandLine {
 					log.info("Would upload '" + name + "'");
 				}
 				if (file.localFilename != null && !file.localFilename.equals(file.filename)) {
-					file.addPreviousVersion(file.current.checksum, file.current.timestamp, file.filename);
+					file.addPreviousVersion(file.current.checksum, file.current.timestamp, file.filename, file.updateSite);
 				}
 				file.setAction(files, Action.UPLOAD);
 			}

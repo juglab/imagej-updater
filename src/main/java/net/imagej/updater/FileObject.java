@@ -69,10 +69,17 @@ public class FileObject {
 
 		// optional (can differ from FileObject.filename if the version differs)
 		public String filename;
+		public String updateSite;
 
 		Version(final String checksum, final long timestamp) {
 			this.checksum = checksum;
 			this.timestamp = timestamp;
+		}
+
+		Version(final String checksum, final long timestamp, final String updateSite) {
+			this.checksum = checksum;
+			this.timestamp = timestamp;
+			this.updateSite = updateSite;
 		}
 
 		@Override
@@ -88,7 +95,8 @@ public class FileObject {
 		}
 
 		public boolean equals(final Version other) {
-			return timestamp == other.timestamp && checksum.equals(other.checksum);
+			return timestamp == other.timestamp && checksum.equals(other.checksum)
+					&& updateSite == other.updateSite;
 		}
 
 		@Override
@@ -192,7 +200,7 @@ public class FileObject {
 	{
 		this.updateSite = updateSite;
 		this.filename = filename;
-		if (checksum != null) current = new Version(checksum, timestamp);
+		if (checksum != null) current = new Version(checksum, timestamp, updateSite);
 		previous = new LinkedHashSet<>();
 		this.status = status;
 		dependencies = new LinkedHashMap<>();
@@ -206,7 +214,7 @@ public class FileObject {
 
 	public void merge(final FileObject upstream) {
 		for (final Version previous : upstream.previous)
-			addPreviousVersion(previous.checksum, previous.timestamp, previous.filename);
+			addPreviousVersion(previous.checksum, previous.timestamp, previous.filename, previous.updateSite);
 		if (updateSite == null || updateSite.equals(upstream.updateSite)) {
 			updateSite = upstream.updateSite;
 			description = upstream.description;
@@ -218,7 +226,7 @@ public class FileObject {
 			filesize = upstream.filesize;
 			executable = upstream.executable;
 			if (current != null && !upstream.hasPreviousVersion(current.checksum)) addPreviousVersion(
-				current.checksum, current.timestamp, current.filename);
+				current.checksum, current.timestamp, current.filename, current.updateSite);
 			current = upstream.current;
 			status = upstream.status;
 			action = upstream.action;
@@ -226,7 +234,7 @@ public class FileObject {
 		else {
 			final Version other = upstream.current;
 			if (other != null && !hasPreviousVersion(other.checksum)) addPreviousVersion(
-				other.checksum, other.timestamp, other.filename);
+				other.checksum, other.timestamp, other.filename, other.updateSite);
 		}
 	}
 
@@ -314,9 +322,9 @@ public class FileObject {
 		return true;
 	}
 
-	void setVersion(final String checksum, final long timestamp) {
+	void setVersion(final String checksum, final long timestamp, final String updateSite) {
 		if (current != null) previous.add(current);
-		current = new Version(checksum, timestamp);
+		current = new Version(checksum, timestamp, updateSite);
 		current.filename = filename;
 	}
 
@@ -455,8 +463,15 @@ public class FileObject {
 		return previous;
 	}
 
+	@Deprecated
 	public void addPreviousVersion(final String checksum, final long timestamp, final String filename) {
-		final Version version = new Version(checksum, timestamp);
+		final Version version = new Version(checksum, timestamp, null);
+		if (filename != null && !"".equals(filename)) version.filename = filename;
+		if (!previous.contains(version)) previous.add(version);
+	}
+
+	public void addPreviousVersion(final String checksum, final long timestamp, final String filename, final String updateSite) {
+		final Version version = new Version(checksum, timestamp, updateSite);
 		if (filename != null && !"".equals(filename)) version.filename = filename;
 		if (!previous.contains(version)) previous.add(version);
 	}
@@ -473,19 +488,19 @@ public class FileObject {
 				action + ", " + status + ")");
 		}
 		if (action == Action.UPLOAD) {
-			if (current == null) {
-				current = new Version(localChecksum, localTimestamp);
-			}
-			if (localFilename != null) {
-				current.filename = filename;
-				filename = localFilename;
-			}
 			if (updateSite == null) {
 				Collection<String> sites = files.getSiteNamesToUpload();
 				if (sites == null || sites.size() != 1) {
 					throw new Error("Need an update site to upload to!");
 				}
 				updateSite = sites.iterator().next();
+			}
+			if (current == null) {
+				current = new Version(localChecksum, localTimestamp, updateSite);
+			}
+			if (localFilename != null) {
+				current.filename = filename;
+				filename = localFilename;
 			}
 			files.updateDependencies(this);
 		} else if (originalUpdateSite != null && action != Action.REMOVE) {
@@ -519,7 +534,7 @@ public class FileObject {
 		else if (isObsolete() || status == Status.UPDATEABLE) {
 			/* force re-upload */
 			status = Status.INSTALLED;
-			setVersion(localChecksum, localTimestamp);
+			setVersion(localChecksum, localTimestamp, updateSite);
 		}
 		else {
 			if (!metadataChanged &&
@@ -527,7 +542,7 @@ public class FileObject {
 			{
 				throw new Error(filename + " is already uploaded");
 			}
-			setVersion(localChecksum, localTimestamp);
+			setVersion(localChecksum, localTimestamp, updateSite);
 		}
 	}
 
@@ -548,7 +563,7 @@ public class FileObject {
 				overridingRank = site.getRank();
 			}
 		}
-		addPreviousVersion(current.checksum, current.timestamp, current.filename);
+		addPreviousVersion(current.checksum, current.timestamp, current.filename, current.updateSite);
 		setStatus(Status.OBSOLETE_UNINSTALLED);
 		current = null;
 

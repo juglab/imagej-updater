@@ -939,7 +939,7 @@ public class UpdaterTest {
 			final FileObject file =
 				new FileObject(null, "jars/new.jar", jar.length(), triplet[1], UpdaterUtil
 					.getTimestamp(jar), Status.NOT_INSTALLED);
-			file.addPreviousVersion(triplet[0], 1, null);
+			file.addPreviousVersion(triplet[0], 1, null, null);
 			files.add(file);
 			files.prefix(".checksums").delete();
 			new Checksummer(files, progress).updateFromLocal();
@@ -1253,7 +1253,7 @@ public class UpdaterTest {
 		final FileObject file =
 			new FileObject(FilesCollection.DEFAULT_UPDATE_SITE, "jars/new.jar", jar.length(), checksumOld, UpdaterUtil
 				.getTimestamp(jar), Status.INSTALLED);
-		file.addPreviousVersion(checksumNew, UpdaterUtil.getTimestamp(jar) - 1l, null);
+		file.addPreviousVersion(checksumNew, UpdaterUtil.getTimestamp(jar) - 1l, null, null);
 		files.add(file);
 
 		final File webRoot = getWebRoot(files);

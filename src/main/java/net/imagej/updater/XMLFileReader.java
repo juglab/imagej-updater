@@ -164,9 +164,9 @@ public class XMLFileReader extends DefaultHandler {
 			if ("true".equalsIgnoreCase(executable)) current.executable = true;
 		}
 		else if (currentTag.equals("previous-version")) current.addPreviousVersion(
-			atts.getValue("checksum"), getLong(atts, "timestamp"), atts.getValue("filename"));
+			atts.getValue("checksum"), getLong(atts, "timestamp"), atts.getValue("filename"), atts.getValue("update-site"));
 		else if (currentTag.equals("version")) {
-			current.setVersion(atts.getValue("checksum"), getLong(atts, "timestamp"));
+			current.setVersion(atts.getValue("checksum"), getLong(atts, "timestamp"), atts.getValue("update-site"));
 			current.filesize = getLong(atts, "filesize");
 		}
 		else if (currentTag.equals("dependency")) {
@@ -291,28 +291,34 @@ public class XMLFileReader extends DefaultHandler {
 			versions.add(file.current);
 		for (final FileObject.Version version : file.previous)
 			versions.add(version);
-		Collections.sort(versions, new Comparator<FileObject.Version>() {
-			@Override
-			public int compare(Version v1, Version v2) {
-				long diff = v1.timestamp - v2.timestamp;
-				return diff > 0 ? -1 : (diff < 0 ? +1 : 0);
-			}
-		});
+		Collections.sort(versions, (v1, v2) -> {
+            long diff = v1.timestamp - v2.timestamp;
+            return diff > 0 ? -1 : (diff < 0 ? +1 : 0);
+        });
 		String filename = file.filename;
+		String updateSite = file.updateSite;
 		for (final FileObject.Version version : versions) {
-			if (version.filename != null)
+			if (version.filename != null) {
 				filename = version.filename;
-			else
+			}
+			else {
 				version.filename = filename;
+			}
+			if (version.updateSite != null) {
+				updateSite = version.updateSite;
+			}
+			else {
+				version.updateSite = updateSite;
+			}
 		}
 	}
 
 	private static void addPreviousVersions(FileObject from, FileObject to) {
 		if (from.current != null) {
-			to.addPreviousVersion(from.current.checksum, from.current.timestamp, from.getLocalFilename(false));
+			to.addPreviousVersion(from.current.checksum, from.current.timestamp, from.getLocalFilename(false), from.updateSite);
 		}
 		for (final FileObject.Version version : from.previous) {
-			to.addPreviousVersion(version.checksum, version.timestamp, version.filename);
+			to.addPreviousVersion(version.checksum, version.timestamp, version.filename, version.updateSite);
 		}
 	}
 
