@@ -71,12 +71,12 @@ public class FileObject {
 		public String filename;
 		public String updateSite;
 
-		Version(final String checksum, final long timestamp) {
+		public Version(final String checksum, final long timestamp) {
 			this.checksum = checksum;
 			this.timestamp = timestamp;
 		}
 
-		Version(final String checksum, final long timestamp, final String updateSite) {
+		public Version(final String checksum, final long timestamp, final String updateSite) {
 			this.checksum = checksum;
 			this.timestamp = timestamp;
 			this.updateSite = updateSite;
