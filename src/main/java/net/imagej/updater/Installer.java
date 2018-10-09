@@ -33,6 +33,10 @@ package net.imagej.updater;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -393,6 +397,43 @@ public class Installer extends Downloader {
 			}
 		}
 		return file.renameTo(backup);
+	}
+
+	public static boolean filePresentOnUpdateSite(FilesCollection files, FileObject.Version version) {
+		URL u;
+		try {
+			u = new URL(files.getURL(version));
+		} catch (MalformedURLException e) {
+			return false;
+		}
+		System.out.println("testing url " + u.toString());
+		HttpURLConnection huc;
+		try {
+			huc = (HttpURLConnection)  u.openConnection ();
+		} catch (IOException e) {
+			return false;
+		}
+		try {
+			huc.setRequestMethod ("GET");  //OR  huc.setRequestMethod ("HEAD");
+		} catch (ProtocolException e) {
+			huc.disconnect();
+			return false;
+		}
+		try {
+			huc.connect();
+		} catch (IOException e) {
+			huc.disconnect();
+			return false;
+		}
+		int code;
+		try {
+			code = huc.getResponseCode();
+		} catch (IOException e) {
+			huc.disconnect();
+			return false;
+		}
+		huc.disconnect();
+		return code == 200;
 	}
 
 }

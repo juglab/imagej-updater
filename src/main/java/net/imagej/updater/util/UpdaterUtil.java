@@ -296,18 +296,27 @@ public class UpdaterUtil {
 			format.format(second);
 	}
 
+	public static Calendar timestamp2date(final long timestamp) {
+		final String t = "" + timestamp + "00000000000000";
+		return timestamp2date(t);
+	}
+
+	public static Calendar timestamp2date(final String timestamp) {
+		final Calendar calendar = Calendar.getInstance();
+		calendar.set(Integer.parseInt(timestamp.substring(0, 4)), Integer
+				.parseInt(timestamp.substring(4, 6)) - 1, Integer.parseInt(timestamp
+				.substring(6, 8)), Integer.parseInt(timestamp.substring(8, 10)), Integer
+				.parseInt(timestamp.substring(10, 12)), Integer.parseInt(timestamp
+				.substring(12, 14)));
+		return calendar;
+	}
+
 	public static long timestamp2millis(final long timestamp) {
 		return timestamp2millis("" + timestamp);
 	}
 
 	public static long timestamp2millis(final String timestamp) {
-		final Calendar calendar = Calendar.getInstance();
-		calendar.set(Integer.parseInt(timestamp.substring(0, 4)), Integer
-			.parseInt(timestamp.substring(4, 6)) - 1, Integer.parseInt(timestamp
-			.substring(6, 8)), Integer.parseInt(timestamp.substring(8, 10)), Integer
-			.parseInt(timestamp.substring(10, 12)), Integer.parseInt(timestamp
-			.substring(12, 14)));
-		return calendar.getTimeInMillis();
+		return timestamp2date(timestamp).getTimeInMillis();
 	}
 
 	private static final String[] months = { "Zero", "Jan", "Feb", "Mar", "Apr",

@@ -771,6 +771,15 @@ public class FilesCollection extends LinkedHashMap<String, FileObject>
 			file.getTimestamp();
 	}
 
+	public String getURL(FileObject.Version version) {
+		final String siteName = version.updateSite;
+		assert (siteName != null && !siteName.equals(""));
+		final UpdateSite site = getUpdateSite(siteName, false);
+		if (site == null) return null;
+		return site.getURL() + version.filename.replace(" ", "%20") + "-" +
+				version.timestamp;
+	}
+
 	public static class DependencyMap extends
 		HashMap<FileObject, FilesCollection>
 	{

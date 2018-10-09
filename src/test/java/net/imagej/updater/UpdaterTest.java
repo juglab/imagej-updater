@@ -606,6 +606,38 @@ public class UpdaterTest {
 		assertEquals("jars/Jama.jar", previous[2].filename);
 	}
 
+
+	@Test
+	public void testMultipleVersionsSameSite2() throws Exception {
+		files = initialize();
+		final String db = "<pluginRecords>"
+				+ " <plugin filename=\"jars/Jama.jar\">"
+				+ "  <version checksum=\"d\" timestamp=\"4\" filesize=\"10\" filename=\"jars/Jama-1.0.1.jar\"/>"
+				+ "  <previous-version timestamp=\"3\" checksum=\"c\" filename=\"jars/Jama-1.0.2.jar\"/>"
+				+ "  <previous-version timestamp=\"2\" checksum=\"b\" filename=\"jars/Jama-1.0.3.jar\"/>"
+				+ "  <previous-version timestamp=\"1\" checksum=\"a\" filename=\"jars/Jama-1.0.4.jar\"/>"
+				+ " </plugin>"
+				+ "</pluginRecords>";
+		final File webRoot = getWebRoot(files);
+		writeGZippedFile(webRoot, "db.xml.gz", db);
+		files = readDb(files);
+		files.clear();
+		new XMLFileReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
+		final FileObject jama = files.get("jars/Jama.jar");
+		assertNotNull(jama);
+		assertCount(3, jama.previous);
+		final FileObject.Version previous[] = new FileObject.Version[3];
+		for (final FileObject.Version version : jama.previous) {
+			previous[(int)(version.timestamp - 1)] = version;
+		}
+		assertTrue("a".equals(previous[0].checksum));
+		assertEquals("jars/Jama-1.0.4.jar", previous[0].filename);
+		assertTrue("b".equals(previous[1].checksum));
+		assertEquals("jars/Jama-1.0.3.jar", previous[1].filename);
+		assertTrue("c".equals(previous[2].checksum));
+		assertEquals("jars/Jama-1.0.2.jar", previous[2].filename);
+	}
+
 	@Test
 	public void testOverriddenObsolete() throws Exception {
 		files = initialize();

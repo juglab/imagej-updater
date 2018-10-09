@@ -509,15 +509,6 @@ public class Checksummer extends AbstractProgressable {
 						cachedChecksums.put(filename, new FileObject.Version(checksum,
 								timestamp, null));
 					}
-					if(parts.length == 4) {
-						final String checksum = parts[0];
-						final long timestamp =
-								Long.parseLong(parts[1]);
-						final String filename = parts[2];
-						final String updateSite = parts[3];
-						cachedChecksums.put(filename, new FileObject.Version(checksum,
-								timestamp, updateSite));
-					}
 				}
 				catch (final NumberFormatException e) {
 					/* ignore line */
@@ -539,7 +530,7 @@ public class Checksummer extends AbstractProgressable {
 				if (filename.startsWith(":") || files.prefix(filename).exists()) {
 					final FileObject.Version version = cachedChecksums.get(filename);
 					writer.write(version.checksum + " " + version.timestamp + " " +
-						filename + " " + version.updateSite + "\n");
+						filename + "\n");
 				}
 			writer.close();
 		}

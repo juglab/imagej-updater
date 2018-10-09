@@ -62,6 +62,10 @@ public class FileObject {
 
 	public static class Version implements Comparable<Version> {
 
+		public enum Existence {
+			UNKNOWN, PRESENT, MISSING
+		}
+
 		public String checksum;
 		// This timestamp is not a Unix epoch!
 		// Instead, it is Long.parseLong(Util.timestamp(epoch))
@@ -70,6 +74,8 @@ public class FileObject {
 		// optional (can differ from FileObject.filename if the version differs)
 		public String filename;
 		public String updateSite;
+
+		public Existence existence = Existence.UNKNOWN;
 
 		public Version(final String checksum, final long timestamp) {
 			this.checksum = checksum;
@@ -109,9 +115,10 @@ public class FileObject {
 		public String toString() {
 			return "Version(" + checksum + ";" + timestamp + ")";
 		}
+
 	}
 
-	public static enum Action {
+	public enum Action {
 		// no changes
 		LOCAL_ONLY("Local-only"), NOT_INSTALLED("Not installed"), INSTALLED(
 				"Up-to-date"), UPDATEABLE("Update available"), MODIFIED(
@@ -135,7 +142,7 @@ public class FileObject {
 		}
 	}
 
-	public static enum Status {
+	public enum Status {
 		NOT_INSTALLED(Action.NOT_INSTALLED, Action.INSTALL, Action.REMOVE),
 		INSTALLED(Action.INSTALLED, Action.UNINSTALL),
 		UPDATEABLE(Action.UPDATEABLE, Action.UNINSTALL, Action.UPDATE, Action.UPLOAD),
