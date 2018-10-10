@@ -111,8 +111,7 @@ public class FileObject {
 		}
 
 		public boolean equals(final Version other) {
-			return timestamp == other.timestamp && checksum.equals(other.checksum)
-					&& updateSite == other.updateSite;
+			return timestamp == other.timestamp && checksum.equals(other.checksum);
 		}
 
 		@Override
