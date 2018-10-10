@@ -33,10 +33,7 @@ package net.imagej.updater;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -403,37 +400,44 @@ public class Installer extends Downloader {
 		URL u;
 		try {
 			u = new URL(files.getURL(version));
+			boolean exists = getStatus(u);
+			if(!exists) {
+				System.out.println("Could not find " + u.toString());
+			}
+			return exists;
 		} catch (MalformedURLException e) {
+			e.printStackTrace();
 			return false;
 		}
-		System.out.println("testing url " + u.toString());
-		HttpURLConnection huc;
+	}
+
+	public static boolean getStatus(URL url) {
+
 		try {
-			huc = (HttpURLConnection)  u.openConnection ();
-		} catch (IOException e) {
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("HEAD");
+			connection.setConnectTimeout(10);
+			connection.connect();
+
+			int code = connection.getResponseCode();
+			if (code == 200) {
+				return true;
+			} else {
+				System.out.println(url.toString() + " response code: " + code);
+				return false;
+			}
+		} catch (SocketTimeoutException e) {
+//			System.out.println(url + " took too long to load, assuming it exists");
+			return true;
+		} catch (UnknownHostException e) {
 			return false;
-		}
-		try {
-			huc.setRequestMethod ("GET");  //OR  huc.setRequestMethod ("HEAD");
 		} catch (ProtocolException e) {
-			huc.disconnect();
+			e.printStackTrace();
 			return false;
-		}
-		try {
-			huc.connect();
 		} catch (IOException e) {
-			huc.disconnect();
+			e.printStackTrace();
 			return false;
 		}
-		int code;
-		try {
-			code = huc.getResponseCode();
-		} catch (IOException e) {
-			huc.disconnect();
-			return false;
-		}
-		huc.disconnect();
-		return code == 200;
 	}
 
 }

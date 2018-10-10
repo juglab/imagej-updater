@@ -77,9 +77,19 @@ public class FileObject {
 
 		public Existence existence = Existence.UNKNOWN;
 
+		public String notes;
+
 		public Version(final String checksum, final long timestamp) {
 			this.checksum = checksum;
 			this.timestamp = timestamp;
+		}
+
+		public Version(Version other) {
+			this.checksum = other.checksum;
+			this.timestamp = other.timestamp;
+			this.updateSite = other.updateSite;
+			this.existence = other.existence;
+			this.filename = other.filename;
 		}
 
 		public Version(final String checksum, final long timestamp, final String updateSite) {
