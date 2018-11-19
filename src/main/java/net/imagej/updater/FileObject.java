@@ -677,6 +677,10 @@ public class FileObject {
 		return result;
 	}
 
+	public Map<String, FileObject> getOverriddenUpdateSites() {
+		return overriddenUpdateSites;
+	}
+
 	public Status getStatus() {
 		return status;
 	}
