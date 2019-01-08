@@ -1,4 +1,4 @@
-[![](https://travis-ci.org/imagej/imagej-updater.svg?branch=master)](https://travis-ci.org/imagej/imagej-updater)
+[![](https://travis-ci.com/juglab/imagej-updater.svg?branch=master)](https://travis-ci.com/juglab/imagej-updater)
 
 ImageJ Updater
 --------------
