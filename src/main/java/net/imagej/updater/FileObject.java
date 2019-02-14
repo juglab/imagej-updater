@@ -320,7 +320,7 @@ public class FileObject {
 		return true;
 	}
 
-	void setVersion(final String checksum, final long timestamp) {
+	public void setVersion(final String checksum, final long timestamp) {
 		if (current != null) previous.add(current);
 		current = new Version(checksum, timestamp);
 		current.filename = filename;
@@ -890,6 +890,14 @@ public class FileObject {
 			if (!parent.exists()) parent.mkdirs();
 			file.createNewFile();
 		}
+	}
+
+	public Map<String, FileObject> getOverriddenUpdateSites() {
+		return overriddenUpdateSites;
+	}
+
+	public void setOverriddenUpdateSites(Map<String, FileObject> overriddenUpdateSites) {
+		this.overriddenUpdateSites = overriddenUpdateSites;
 	}
 
 	public String toDebug() {

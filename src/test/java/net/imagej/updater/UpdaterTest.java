@@ -63,23 +63,18 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
-import net.imagej.updater.Checksummer;
-import net.imagej.updater.Conflicts;
-import net.imagej.updater.FileObject;
-import net.imagej.updater.FilesCollection;
-import net.imagej.updater.Installer;
-import net.imagej.updater.XMLFileDownloader;
-import net.imagej.updater.XMLFileReader;
-import net.imagej.updater.XMLFileWriter;
 import net.imagej.updater.Conflicts.Conflict;
 import net.imagej.updater.Conflicts.Resolution;
 import net.imagej.updater.FileObject.Action;
 import net.imagej.updater.FileObject.Status;
+import net.imagej.updater.db.DBHandlerService;
 import net.imagej.updater.test.Dependencee;
 import net.imagej.updater.test.Dependency;
+import net.imagej.updater.util.ServiceHelper;
 import net.imagej.updater.util.UpdaterUtil;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.scijava.test.TestUtils;
 import org.scijava.util.FileUtils;
@@ -93,10 +88,16 @@ import org.scijava.util.FileUtils;
 public class UpdaterTest {
 
 	private FilesCollection files;
+	private DBHandlerService dbHandlerService;
 
 	//
 	// Setup
 	//
+	
+	@Before
+	public void createServices() {
+		dbHandlerService = ServiceHelper.createDBHandlerService();
+	}
 
 	@After
 	public void release() {
@@ -135,7 +136,7 @@ public class UpdaterTest {
 		// Initialize FilesCollection
 
 		files.read(files.prefix(UpdaterUtil.XML_COMPRESSED));
-		new XMLFileReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
+		dbHandlerService.getDBReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
 
 		// Write the (empty) files collection with the update site information
 
@@ -215,7 +216,7 @@ public class UpdaterTest {
 		// Chronological order must be preserved
 
 		files = files.clone(new ArrayList<FileObject>());
-		new XMLFileReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
+		dbHandlerService.getDBReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
 		assertCount(3, files);
 
 		final String[] names = new String[4];
@@ -587,7 +588,7 @@ public class UpdaterTest {
 		writeGZippedFile(webRoot, "db.xml.gz", db);
 		files = readDb(files);
 		files.clear();
-		new XMLFileReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
+		dbHandlerService.getDBReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
 		final FileObject jama = files.get("jars/Jama.jar");
 		assertNotNull(jama);
 		assertCount(3, jama.previous);
@@ -625,8 +626,8 @@ public class UpdaterTest {
 		files = readDb(files);
 		files.clear();
 		files.addUpdateSite("Fiji", webRoot2.toURI().toURL().toString(), null, null, 0);
-		new XMLFileReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
-		new XMLFileReader(files).read("Fiji");
+		dbHandlerService.getDBReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
+		dbHandlerService.getDBReader(files).read("Fiji");
 
 		FileObject file = files.get("ImageJ-linux64");
 		assertNotNull(file);
@@ -640,8 +641,8 @@ public class UpdaterTest {
 		files.getUpdateSite(FilesCollection.DEFAULT_UPDATE_SITE, false).setURL(webRoot2.toURI().toURL().toString());
 		files.getUpdateSite(FilesCollection.DEFAULT_UPDATE_SITE, false).setTimestamp(0);
 		files.addUpdateSite("Fiji", webRoot.toURI().toURL().toString(), null, null, 0);
-		new XMLFileReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
-		new XMLFileReader(files).read("Fiji");
+		dbHandlerService.getDBReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
+		dbHandlerService.getDBReader(files).read("Fiji");
 
 		file = files.get("ImageJ-linux64");
 		assertNotNull(file);
@@ -956,7 +957,7 @@ public class UpdaterTest {
 		new File(webRoot, "jars").mkdirs();
 		assertTrue(jar.renameTo(new File(webRoot, "jars/new.jar-" +
 			file.current.timestamp)));
-		new XMLFileWriter(files).write(new GZIPOutputStream(new FileOutputStream(
+		dbHandlerService.getDBWriter(files).write(new GZIPOutputStream(new FileOutputStream(
 			new File(webRoot, "db.xml.gz"))), false);
 
 		files = readDb(files);
@@ -1259,7 +1260,7 @@ public class UpdaterTest {
 		files.add(file);
 
 		final File webRoot = getWebRoot(files);
-		new XMLFileWriter(files).write(new GZIPOutputStream(new FileOutputStream(
+		dbHandlerService.getDBWriter(files).write(new GZIPOutputStream(new FileOutputStream(
 				new File(webRoot, "db.xml.gz"))), false);
 
 		files = readDb(files);

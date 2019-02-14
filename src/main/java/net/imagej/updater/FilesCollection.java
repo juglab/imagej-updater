@@ -31,45 +31,20 @@
 
 package net.imagej.updater;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.zip.GZIPOutputStream;
-
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerConfigurationException;
-
 import net.imagej.updater.Conflicts.Conflict;
 import net.imagej.updater.FileObject.Action;
 import net.imagej.updater.FileObject.Status;
-import net.imagej.updater.action.InstallOrUpdate;
-import net.imagej.updater.action.KeepAsIs;
-import net.imagej.updater.action.Remove;
-import net.imagej.updater.action.Uninstall;
-import net.imagej.updater.action.Upload;
-import net.imagej.updater.util.DependencyAnalyzer;
-import net.imagej.updater.util.Progress;
-import net.imagej.updater.util.UpdateCanceledException;
-import net.imagej.updater.util.UpdaterUtil;
-
+import net.imagej.updater.action.*;
+import net.imagej.updater.db.DBHandlerService;
+import net.imagej.updater.util.*;
 import org.scijava.log.LogService;
 import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerConfigurationException;
+import java.io.*;
+import java.util.*;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * This class represents the database of available {@link FileObject}s.
@@ -93,6 +68,8 @@ public class FilesCollection extends LinkedHashMap<String, FileObject>
 	private DependencyAnalyzer dependencyAnalyzer;
 	public final UpdaterUtil util;
 
+	private final DBHandlerService dbHandler;
+
 	/**
 	 * This constructor takes the imagejRoot primarily for testing purposes.
 	 * 
@@ -111,6 +88,7 @@ public class FilesCollection extends LinkedHashMap<String, FileObject>
 	public FilesCollection(final LogService log, final File imagejRoot) {
 		this.log = log;
 		this.imagejRoot = imagejRoot;
+		dbHandler = ServiceHelper.createDBHandlerService();
 		util = new UpdaterUtil(imagejRoot);
 		updateSites = new LinkedHashMap<>();
 		final UpdateSite updateSite =
@@ -293,8 +271,9 @@ public class FilesCollection extends LinkedHashMap<String, FileObject>
 		}
 	}
 
-	public void reReadUpdateSite(final String name, final Progress progress) throws ParserConfigurationException, IOException, SAXException {
-		new XMLFileReader(this).read(name);
+	public void reReadUpdateSite(final String name, final Progress progress)
+			throws ParserConfigurationException, SAXException, IOException {
+		dbHandler.getDBReader(this).read(name);
 		final List<String> filesFromSite = new ArrayList<>();
 		for (final FileObject file : forUpdateSite(name))
 			filesFromSite.add(file.localFilename != null ? file.localFilename : file.filename);
@@ -419,9 +398,8 @@ public class FilesCollection extends LinkedHashMap<String, FileObject>
 	}
 
 	public void read(final FileInputStream in) throws IOException,
-		ParserConfigurationException, SAXException
-	{
-		new XMLFileReader(this).read(in);
+			ParserConfigurationException, SAXException {
+		dbHandler.getDBReader(this).read(in);
 		in.close();
 	}
 
@@ -430,7 +408,7 @@ public class FilesCollection extends LinkedHashMap<String, FileObject>
 	{
 		final File out = prefix(UpdaterUtil.XML_COMPRESSED);
 		final File tmp = prefix(UpdaterUtil.XML_COMPRESSED + ".tmp");
-		new XMLFileWriter(this).write(new GZIPOutputStream(
+		dbHandler.getDBWriter(this).write(new GZIPOutputStream(
 				new FileOutputStream(tmp)), true);
 		if (out.exists() && !out.delete())
 			out.renameTo(prefix(UpdaterUtil.XML_COMPRESSED + ".backup"));

@@ -29,33 +29,31 @@
  * #L%
  */
 
-package net.imagej.updater;
+package net.imagej.updater.db.v1;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.zip.GZIPInputStream;
-
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
+import net.imagej.updater.FileObject;
 import net.imagej.updater.FileObject.Status;
 import net.imagej.updater.FileObject.Version;
+import net.imagej.updater.FilesCollection;
+import net.imagej.updater.UpdateSite;
+import net.imagej.updater.XMLFileErrorHandler;
+import net.imagej.updater.db.DBReader;
 import net.imagej.updater.util.UpdaterUtil;
-
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * The XML File Reader reads a locally-cached index of the available file
@@ -63,11 +61,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * 
  * @author Johannes Schindelin
  */
-
-/**
- * @deprecated  Use DBHandlerService.getDBReader(files) instead
- */
-@Deprecated public class XMLFileReader extends DefaultHandler {
+public class XMLFileReaderV1 extends DefaultHandler implements DBReader {
 
 	private final FilesCollection files;
 
@@ -86,14 +80,16 @@ import org.xml.sax.helpers.DefaultHandler;
 	private FileObject current;
 	private String currentTag, body;
 
-	public XMLFileReader(final FilesCollection files) {
+	public XMLFileReaderV1(final FilesCollection files) {
 		this.files = files;
 	}
 
+	@Override
 	public String getWarnings() {
 		return warnings.toString();
 	}
 
+	@Override
 	public void read(final String updateSite)
 		throws ParserConfigurationException, IOException, SAXException
 	{
@@ -109,6 +105,7 @@ import org.xml.sax.helpers.DefaultHandler;
 		site.setTimestamp(Long.parseLong(UpdaterUtil.timestamp(lastModified)));
 	}
 
+	@Override
 	public void read(final InputStream in) throws ParserConfigurationException,
 		IOException, SAXException
 	{
@@ -117,6 +114,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 	// timestamp is the timestamp (not the Unix epoch) we last saw updates from
 	// this site
+	@Override
 	public void read(final String updateSite, final InputStream in,
 		final long timestamp) throws ParserConfigurationException, IOException,
 		SAXException
@@ -238,23 +236,23 @@ import org.xml.sax.helpers.DefaultHandler;
 					addPreviousVersions(current, file);
 				} else if (file.isObsolete()) {
 					if (file.updateSite != null) {
-						for (String site : file.overriddenUpdateSites.keySet())
-							current.overriddenUpdateSites.put(site,  file.overriddenUpdateSites.get(site));
-						current.overriddenUpdateSites.put(file.updateSite, file);
+						for (String site : file.getOverriddenUpdateSites().keySet())
+							current.getOverriddenUpdateSites().put(site,  file.getOverriddenUpdateSites().get(site));
+						current.getOverriddenUpdateSites().put(file.updateSite, file);
 					}
 					files.add(current);
 					filesFromThisSite.add(current);
 				} else if (current.isObsolete()) {
 					if (current.updateSite != null)
-						file.overriddenUpdateSites.put(current.updateSite, current);
+						file.getOverriddenUpdateSites().put(current.updateSite, current);
 				} else if (getRank(files, updateSite) >= getRank(files, file.updateSite)) {
 					if ((updateSite != null && updateSite.equals(file.updateSite)) || (updateSite == null && file.updateSite == null)) {
 						 // simply update the object
 					} else {
-						for (String site : file.overriddenUpdateSites.keySet())
-							current.overriddenUpdateSites.put(site, file.overriddenUpdateSites.get(site));
+						for (String site : file.getOverriddenUpdateSites().keySet())
+							current.getOverriddenUpdateSites().put(site, file.getOverriddenUpdateSites().get(site));
 						if (file.updateSite != null && !file.updateSite.equals(updateSite)) {
-							current.overriddenUpdateSites.put(file.updateSite, file);
+							current.getOverriddenUpdateSites().put(file.updateSite, file);
 						}
 					}
 					if (file.localFilename != null) {
@@ -271,7 +269,7 @@ import org.xml.sax.helpers.DefaultHandler;
 								+ file.updateSite + "'");
 				}
 				else {
-					file.overriddenUpdateSites.put(updateSite, current);
+					file.getOverriddenUpdateSites().put(updateSite, current);
 					if (this.updateSite != null && file.updateSite != null && getRank(files, file.updateSite) > getRank(files, this.updateSite))
 						files.log.debug("'" + file.filename
 								+ "' from update site '" + file.updateSite
