@@ -31,6 +31,13 @@
 
 package net.imagej.updater;
 
+import net.imagej.updater.Conflicts.Conflict;
+import net.imagej.updater.FileObject.Action;
+import net.imagej.updater.db.DBHandlerService;
+import net.imagej.updater.db.DBWriter;
+import net.imagej.updater.util.*;
+import org.scijava.log.LogService;
+
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -39,16 +46,6 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import net.imagej.updater.Conflicts.Conflict;
-import net.imagej.updater.FileObject.Action;
-import net.imagej.updater.util.Progress;
-import net.imagej.updater.util.StderrProgress;
-import net.imagej.updater.util.UpdaterUserInterface;
-import net.imagej.updater.util.UpdaterUtil;
-
-import org.scijava.Context;
-import org.scijava.log.LogService;
 
 /**
  * This class is responsible for writing updates to server, upon given the
@@ -76,34 +73,14 @@ public class FilesUploader {
 	private String compressed;
 	private boolean loggedIn;
 
-	private static UploaderService createUploaderService() {
-		setClassLoaderIfNecessary();
-		final Context context = new Context(UploaderService.class);
-		return context.getService(UploaderService.class);
-	}
-
-	/**
-	 * Sets the context class loader if necessary.
-	 *
-	 * If the current class cannot be found by the current Thread's context
-	 * class loader, we should tell the Thread about the class loader that
-	 * loaded this class.
-	 */
-	private static void setClassLoaderIfNecessary() {
-		ClassLoader thisLoader = FilesUploader.class.getClassLoader();
-		ClassLoader loader = Thread.currentThread().getContextClassLoader();
-		for (; loader != null; loader = loader.getParent()) {
-			if (thisLoader == loader) return;
-		}
-		Thread.currentThread().setContextClassLoader(thisLoader);
-	}
+	private DBHandlerService dbHandlerService;
 
 	/**
 	 * @deprecated use {@link #FilesUploader(UploaderService, FilesCollection, String, Progress)} instead
 	 */
 	@Deprecated
 	public FilesUploader(final FilesCollection files, final String updateSite) {
-		this(createUploaderService(), files, updateSite);
+		this(ServiceHelper.createUploaderService(), files, updateSite);
 	}
 
 	/**
@@ -118,7 +95,8 @@ public class FilesUploader {
 	public FilesUploader(UploaderService uploaderService,
 			final FilesCollection files, final String updateSite,
 			final Progress progress) {
-		if (uploaderService == null) uploaderService = createUploaderService();
+		if (uploaderService == null) uploaderService = ServiceHelper.createUploaderService();
+		dbHandlerService = ServiceHelper.createDBHandlerService();
 		this.files = files;
 		siteName = updateSite;
 		site = files.getUpdateSite(updateSite, false);
@@ -311,8 +289,7 @@ public class FilesUploader {
 			}
 		}
 
-		final XMLFileWriter writer =
-			new XMLFileWriter(files.clone(files.forUpdateSite(siteName, true)));
+		DBWriter writer = dbHandlerService.getDBWriter(files.clone(files.forUpdateSite(siteName, true)));
 		if (files.size() > 0) writer.validate(false);
 		((DbXmlFile) uploadables.get(0)).bytes =
 			writer.toCompressedByteArray(false);

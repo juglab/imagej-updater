@@ -31,6 +31,12 @@
 
 package net.imagej.updater;
 
+import net.imagej.updater.db.DBHandlerService;
+import net.imagej.updater.db.DBReader;
+import net.imagej.updater.util.AbstractProgressable;
+import net.imagej.updater.util.ServiceHelper;
+import net.imagej.updater.util.UpdaterUtil;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,9 +44,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
 import java.util.zip.GZIPInputStream;
-
-import net.imagej.updater.util.AbstractProgressable;
-import net.imagej.updater.util.UpdaterUtil;
 
 /**
  * Directly in charge of downloading and saving start-up files (i.e.: XML file
@@ -53,6 +56,7 @@ public class XMLFileDownloader extends AbstractProgressable {
 	private FilesCollection files;
 	private Collection<String> updateSites;
 	private StringBuilder warnings;
+	private final DBHandlerService dbHandlerService;
 
 	public XMLFileDownloader(final FilesCollection files) {
 		this(files, files.getUpdateSiteNames(false));
@@ -63,6 +67,7 @@ public class XMLFileDownloader extends AbstractProgressable {
 	{
 		this.files = files;
 		this.updateSites = updateSites;
+		this.dbHandlerService = ServiceHelper.createDBHandlerService();
 	}
 
 	public void start() {
@@ -73,7 +78,7 @@ public class XMLFileDownloader extends AbstractProgressable {
 	public void start(boolean closeProgressAtEnd) {
 		if (updateSites == null || updateSites.size() == 0) return;
 		setTitle("Updating the index of available files");
-		final XMLFileReader reader = new XMLFileReader(files);
+		final DBReader reader = dbHandlerService.getDBReader(files);
 		final int current = 0, total = updateSites.size();
 		if (warnings == null) warnings = new StringBuilder();
 		else warnings.setLength(0);

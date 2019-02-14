@@ -29,15 +29,16 @@
  * #L%
  */
 
-package net.imagej.updater;
+package net.imagej.updater.db.v1;
 
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.zip.GZIPOutputStream;
+import net.imagej.updater.*;
+import net.imagej.updater.db.DBWriter;
+import net.imagej.updater.util.UpdaterUtil;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.AttributesImpl;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -49,12 +50,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
-
-import net.imagej.updater.util.UpdaterUtil;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.AttributesImpl;
+import java.io.*;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Writes a db.xml.gz file for local and remote use of the updater.
@@ -68,11 +65,7 @@ import org.xml.sax.helpers.AttributesImpl;
  * 
  * @author Johannes Schindelin
  */
-
-/**
- * @deprecated  Use DBHandlerService.getDBWriter(files) instead
- */
-@Deprecated public class XMLFileWriter {
+public class XMLFileWriterV1 implements DBWriter {
 
 	private FilesCollection files;
 	private TransformerHandler handler;
@@ -116,7 +109,7 @@ import org.xml.sax.helpers.AttributesImpl;
 		+ "<!ATTLIST previous-version timestamp-obsolete CDATA #IMPLIED>\n"
 		+ "<!ATTLIST previous-version checksum CDATA #REQUIRED>]>\n";
 
-	public XMLFileWriter(final FilesCollection files) {
+	public XMLFileWriterV1(final FilesCollection files) {
 		this.files = files;
 	}
 

@@ -66,6 +66,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import net.imagej.updater.FileObject.Action;
 import net.imagej.updater.FileObject.Status;
 import net.imagej.updater.util.Progress;
+import net.imagej.updater.util.ServiceHelper;
 import net.imagej.updater.util.StderrProgress;
 import net.imagej.updater.util.UpdaterUtil;
 
@@ -212,7 +213,7 @@ public class UpdaterTestUtils {
 			if (localDb.exists()) {
 				files.read(localDb);
 			}
-			new XMLFileReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
+			ServiceHelper.createDBHandlerService().getDBReader(files).read(FilesCollection.DEFAULT_UPDATE_SITE);
 
 			assertEquals(0, files.size());
 
